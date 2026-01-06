@@ -84,7 +84,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <AppLayout title="Dashboard" />
+                <AppLayout />
               </ProtectedRoute>
             }
           >

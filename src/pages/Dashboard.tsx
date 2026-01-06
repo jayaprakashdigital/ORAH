@@ -6,9 +6,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
 import { getTimeCategory } from '../lib/timeClassification';
 import { useNavigate } from 'react-router-dom';
+import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
-type Call = Database['public']['Tables']['calls']['Row'];
 
 interface DashboardData {
   totalLeads: number;
@@ -24,16 +24,9 @@ interface DashboardData {
 export function Dashboard() {
   const { profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState<DashboardData>({
-    totalLeads: 0,
-    successfulLeads: 0,
-    failedLeads: 0,
-    workingHoursLeads: 0,
-    nonWorkingHoursLeads: 0,
-    recentLeads: [],
-    totalCalls: 0,
-    completedCalls: 0,
-  });
+  const { dateRange, setDateRange, filterByDate } = useDateFilter('Last 7 Days');
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [allCalls, setAllCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +34,6 @@ export function Dashboard() {
       if (authLoading) return;
 
       if (!profile?.company_id) {
-        console.warn('[DASHBOARD] No company_id available');
         setLoading(false);
         return;
       }
@@ -57,36 +49,12 @@ export function Dashboard() {
             .order('created_at', { ascending: false }),
           supabase
             .from('calls')
-            .select('lead_id, success_evaluation, status')
+            .select('lead_id, success_evaluation, status, created_at')
             .eq('company_id', profile.company_id),
         ]);
 
-        const leads = leadsResult.data || [];
-        const calls = callsResult.data || [];
-
-        const callsMap = new Map(
-          calls.map(call => [call.lead_id, call])
-        );
-
-        const successfulLeads = leads.filter(lead => {
-          const call = callsMap.get(lead.id);
-          return call?.success_evaluation === true;
-        }).length;
-
-        const workingHoursLeads = leads.filter(lead =>
-          getTimeCategory(lead.created_at) === 'Working Hours'
-        ).length;
-
-        setData({
-          totalLeads: leads.length,
-          successfulLeads,
-          failedLeads: leads.length - successfulLeads,
-          workingHoursLeads,
-          nonWorkingHoursLeads: leads.length - workingHoursLeads,
-          recentLeads: leads.slice(0, 5),
-          totalCalls: calls.length,
-          completedCalls: calls.filter(c => c.status === 'completed').length,
-        });
+        setAllLeads(leadsResult.data || []);
+        setAllCalls(callsResult.data || []);
       } catch (error) {
         console.error('[DASHBOARD] Error loading data:', error);
       } finally {
@@ -97,53 +65,44 @@ export function Dashboard() {
     fetchData();
   }, [profile?.company_id, authLoading]);
 
+  const filteredLeads = filterByDate(allLeads);
+  const filteredCalls = filterByDate(allCalls);
+
+  const callsMap = new Map(
+    filteredCalls.map(call => [call.lead_id, call])
+  );
+
+  const successfulLeads = filteredLeads.filter(lead => {
+    const call = callsMap.get(lead.id);
+    return call?.success_evaluation === true;
+  }).length;
+
+  const workingHoursLeads = filteredLeads.filter(lead =>
+    getTimeCategory(lead.created_at) === 'Working Hours'
+  ).length;
+
+  const data: DashboardData = {
+    totalLeads: filteredLeads.length,
+    successfulLeads,
+    failedLeads: filteredLeads.length - successfulLeads,
+    workingHoursLeads,
+    nonWorkingHoursLeads: filteredLeads.length - workingHoursLeads,
+    recentLeads: filteredLeads.slice(0, 5),
+    totalCalls: filteredCalls.length,
+    completedCalls: filteredCalls.filter(c => c.status === 'completed').length,
+  };
+
   const successRate = data.totalLeads > 0
     ? Math.round((data.successfulLeads / data.totalLeads) * 100)
     : 0;
 
   const kpis = [
-    {
-      title: 'Total Leads',
-      value: data.totalLeads.toString(),
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'Successful Leads',
-      value: data.successfulLeads.toString(),
-      icon: CheckCircle2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'Failed/Nurture',
-      value: data.failedLeads.toString(),
-      icon: XCircle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-    },
-    {
-      title: 'Success Rate',
-      value: `${successRate}%`,
-      icon: TrendingUp,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-    {
-      title: 'Total Calls',
-      value: data.totalCalls.toString(),
-      icon: Phone,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Working Hours Leads',
-      value: data.workingHoursLeads.toString(),
-      icon: Clock,
-      color: 'text-cyan-600',
-      bgColor: 'bg-cyan-100',
-    },
+    { title: 'Total Leads', value: data.totalLeads.toString(), icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+    { title: 'Successful Leads', value: data.successfulLeads.toString(), icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-100' },
+    { title: 'Failed/Nurture', value: data.failedLeads.toString(), icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100' },
+    { title: 'Success Rate', value: `${successRate}%`, icon: TrendingUp, color: 'text-orange-600', bgColor: 'bg-orange-100' },
+    { title: 'Total Calls', value: data.totalCalls.toString(), icon: Phone, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
+    { title: 'Working Hours Leads', value: data.workingHoursLeads.toString(), icon: Clock, color: 'text-teal-600', bgColor: 'bg-teal-100' },
   ];
 
   if (loading) {
@@ -156,9 +115,12 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold">Dashboard</h2>
-        <p className="text-slate-500">Quick overview of your lead management</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">Dashboard</h2>
+          <p className="text-slate-500">Quick overview of your lead management</p>
+        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,7 +146,7 @@ export function Dashboard() {
           <div className="p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Leads</h3>
             {data.recentLeads.length === 0 ? (
-              <p className="text-sm text-slate-500">No leads yet. Start by syncing your Google Sheet or adding leads manually.</p>
+              <p className="text-sm text-slate-500">No leads in this date range.</p>
             ) : (
               <div className="space-y-3">
                 {data.recentLeads.map((lead) => (
@@ -202,6 +164,7 @@ export function Dashboard() {
                         lead.status === 'new' ? 'bg-blue-100 text-blue-700' :
                         lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-700' :
                         lead.status === 'qualified' ? 'bg-green-100 text-green-700' :
+                        lead.status === 'converted' ? 'bg-emerald-100 text-emerald-700' :
                         'bg-slate-100 text-slate-700'
                       }`}>
                         {lead.status}
@@ -228,7 +191,7 @@ export function Dashboard() {
 
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                  <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
                   <span className="text-sm font-medium text-slate-700">Non-Working Hours</span>
                 </div>
                 <span className="text-lg font-bold text-slate-900">{data.nonWorkingHoursLeads}</span>
@@ -254,7 +217,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {data.totalLeads > 0 && (
+      {allLeads.length > 0 && (
         <Card>
           <div className="p-6">
             <div className="flex items-center justify-between">

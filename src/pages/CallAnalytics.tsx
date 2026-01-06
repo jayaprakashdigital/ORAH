@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { RefreshCw, TrendingUp, DollarSign, Clock, Phone } from 'lucide-react';
+import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
 
 interface VapiAnalyticsData {
   totalCalls: number;
@@ -23,6 +24,7 @@ interface VapiAnalyticsData {
 
 export function CallAnalytics() {
   const { user } = useAuth();
+  const { dateRange, setDateRange } = useDateFilter('Last 30 Days');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<VapiAnalyticsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -180,15 +182,18 @@ export function CallAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold">Call Analytics</h2>
           <p className="text-slate-500">View your call analytics and metrics</p>
         </div>
-        <Button onClick={fetchAnalytics} disabled={loading || !apiKey}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <DateFilter value={dateRange} onChange={setDateRange} />
+          <Button onClick={fetchAnalytics} disabled={loading || !apiKey}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
       </div>
 
       {error && (

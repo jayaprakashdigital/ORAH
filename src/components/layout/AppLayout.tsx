@@ -3,11 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
-interface AppLayoutProps {
-  title: string;
-}
-
-export function AppLayout({ title }: AppLayoutProps) {
+export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -15,7 +11,7 @@ export function AppLayout({ title }: AppLayoutProps) {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="lg:pl-64">
-        <Header title={title} onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="p-4 lg:p-6">
           <Outlet />

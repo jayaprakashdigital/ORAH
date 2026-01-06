@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Calendar, MapPin, User } from 'lucide-react';
+import { Calendar, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
+import { DateFilter, useDateFilter, DateRange } from '../components/ui/DateFilter';
 
 type SiteVisit = Database['public']['Tables']['site_visits']['Row'];
 
@@ -13,10 +14,9 @@ interface EnrichedVisit extends SiteVisit {
 
 export function SiteVisits() {
   const { profile } = useAuth();
-  const [visits, setVisits] = useState<EnrichedVisit[]>([]);
+  const { dateRange, setDateRange } = useDateFilter('This Month');
+  const [allVisits, setAllVisits] = useState<EnrichedVisit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [todayCount, setTodayCount] = useState(0);
-  const [weekCount, setWeekCount] = useState(0);
 
   const fetchVisits = async () => {
     if (!profile?.company_id) {
@@ -45,18 +45,7 @@ export function SiteVisits() {
         lead_name: leadsMap.get(visit.lead_id) || 'Unknown',
       }));
 
-      setVisits(enriched);
-
-      const today = new Date().toISOString().split('T')[0];
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() + 7);
-      const weekEnd = weekStart.toISOString().split('T')[0];
-
-      setTodayCount(enriched.filter(v => v.visit_date === today).length);
-      setWeekCount(enriched.filter(v => {
-        const date = v.visit_date;
-        return date >= today && date <= weekEnd;
-      }).length);
+      setAllVisits(enriched);
     } catch (error) {
       console.error('Error fetching site visits:', error);
     } finally {
@@ -68,6 +57,24 @@ export function SiteVisits() {
     fetchVisits();
   }, [profile?.company_id]);
 
+  const filterVisitsByDate = (visits: EnrichedVisit[], range: DateRange): EnrichedVisit[] => {
+    if (!range.startDate || !range.endDate) return visits;
+    return visits.filter(visit => {
+      const visitDate = new Date(visit.visit_date);
+      return visitDate >= range.startDate! && visitDate <= range.endDate!;
+    });
+  };
+
+  const filteredVisits = filterVisitsByDate(allVisits, dateRange);
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayCount = allVisits.filter(v => v.visit_date === today).length;
+
+  const weekEnd = new Date();
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekEndStr = weekEnd.toISOString().split('T')[0];
+  const weekCount = allVisits.filter(v => v.visit_date >= today && v.visit_date <= weekEndStr).length;
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -78,9 +85,12 @@ export function SiteVisits() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold">Site Visits</h2>
-        <p className="text-slate-500">Manage and track property site visits</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold">Site Visits</h2>
+          <p className="text-slate-500">Manage and track property site visits</p>
+        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -100,16 +110,16 @@ export function SiteVisits() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Site Visits ({visits.length})</CardTitle>
+          <CardTitle>Site Visits ({filteredVisits.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="py-8 text-center text-slate-500">
               Loading site visits...
             </div>
-          ) : visits.length === 0 ? (
+          ) : filteredVisits.length === 0 ? (
             <div className="py-8 text-center text-slate-500">
-              No site visits scheduled yet
+              No site visits in selected date range
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -124,7 +134,7 @@ export function SiteVisits() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visits.map((visit) => (
+                  {filteredVisits.map((visit) => (
                     <tr key={visit.site_visit_id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-3 px-4 text-sm font-medium text-slate-900">{visit.lead_name}</td>
                       <td className="py-3 px-4 text-sm text-slate-600">{visit.project}</td>
@@ -152,9 +162,9 @@ export function SiteVisits() {
 
       <Card>
         <div className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Calendar View</h2>
+          <h2 className="text-lg font-semibold mb-4">Upcoming Visits</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {visits.slice(0, 10).map((visit) => (
+            {filteredVisits.slice(0, 10).map((visit) => (
               <div key={visit.site_visit_id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
                 <div className="flex items-start justify-between">
                   <div>
@@ -173,10 +183,13 @@ export function SiteVisits() {
               </div>
             ))}
           </div>
-          {visits.length > 10 && (
+          {filteredVisits.length > 10 && (
             <p className="text-sm text-slate-500 mt-4">
-              Showing 10 of {visits.length} visits
+              Showing 10 of {filteredVisits.length} visits
             </p>
+          )}
+          {filteredVisits.length === 0 && (
+            <p className="text-sm text-slate-500">No visits in selected date range</p>
           )}
         </div>
       </Card>

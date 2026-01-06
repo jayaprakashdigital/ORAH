@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
 import { getTimeCategory } from '../lib/timeClassification';
 import { useAutoSync } from '../hooks/useAutoSync';
+import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
 type Call = Database['public']['Tables']['calls']['Row'];
@@ -22,6 +23,7 @@ interface EnrichedLead extends Lead {
 export function Leads() {
   const { profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { dateRange, setDateRange, filterByDate } = useDateFilter('Last 30 Days');
   const [leads, setLeads] = useState<EnrichedLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +178,8 @@ export function Leads() {
     }
   };
 
-  const filteredLeads = leads.filter(lead => {
+  const dateFilteredLeads = filterByDate(leads);
+  const filteredLeads = dateFilteredLeads.filter(lead => {
     if (filter.status !== 'all' && lead.status !== filter.status) return false;
     if (filter.timeCategory !== 'all' && lead.timeCategory !== filter.timeCategory) return false;
     if (filter.success === 'true' && !lead.successEvaluation) return false;
@@ -188,7 +191,7 @@ export function Leads() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold">Leads</h2>
           <div className="flex items-center gap-2">
@@ -206,10 +209,13 @@ export function Leads() {
             )}
           </div>
         </div>
-        <Button onClick={() => setShowAddModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Lead
-        </Button>
+        <div className="flex items-center gap-3">
+          <DateFilter value={dateRange} onChange={setDateRange} />
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Lead
+          </Button>
+        </div>
       </div>
 
       {loading ? (
