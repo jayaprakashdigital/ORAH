@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
-import { Users, CheckCircle2, XCircle, Clock, Sun } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Clock, Sun, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -159,6 +159,10 @@ export function Analytics() {
     count: leads.filter(l => l.budgetRange === range).length,
   }));
 
+  const exportToPDF = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -174,7 +178,16 @@ export function Analytics() {
           <h1 className="text-xl font-semibold text-slate-900">Analytics</h1>
           <p className="text-sm text-slate-500 mt-0.5">Lead performance insights</p>
         </div>
-        <DateFilter value={dateRange} onChange={setDateRange} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportToPDF}
+            className="flex items-center gap-2 h-9 px-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+          <DateFilter value={dateRange} onChange={setDateRange} />
+        </div>
       </div>
 
       {totalLeads === 0 ? (

@@ -14,7 +14,6 @@ const navigation = [
   { name: 'Site Visits', to: '/site-visits', icon: Activity },
   { name: 'Analytics', to: '/analytics', icon: BarChart3 },
   { name: 'Call Analytics', to: '/call-analytics', icon: Activity },
-  { name: 'Calendar', to: '/calendar', icon: Calendar },
   { name: 'Agents', to: '/agents', icon: Bot },
   { name: 'Integrations', to: '/integrations', icon: Plug },
   { name: 'Settings', to: '/settings', icon: Settings },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
-import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp, ArrowRight, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -137,6 +137,10 @@ export function Dashboard() {
     { title: 'Working Hours', value: data.workingHoursLeads.toString(), icon: Clock, color: 'text-slate-600', bgColor: 'bg-slate-100' },
   ];
 
+  const exportToPDF = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -152,7 +156,16 @@ export function Dashboard() {
           <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">Overview of your lead management</p>
         </div>
-        <DateFilter value={dateRange} onChange={setDateRange} />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportToPDF}
+            className="flex items-center gap-2 h-9 px-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </button>
+          <DateFilter value={dateRange} onChange={setDateRange} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">

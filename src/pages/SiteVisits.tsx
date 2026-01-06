@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
-import { Calendar, User, MapPin } from 'lucide-react';
+import { Calendar, User, MapPin, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
 import { DateFilter, useDateFilter, DateRange } from '../components/ui/DateFilter';
+import { useNavigate } from 'react-router-dom';
 
 type SiteVisit = Database['public']['Tables']['site_visits']['Row'];
 
@@ -14,9 +15,11 @@ interface EnrichedVisit extends SiteVisit {
 
 export function SiteVisits() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { dateRange, setDateRange } = useDateFilter('This Month');
   const [allVisits, setAllVisits] = useState<EnrichedVisit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const fetchVisits = async () => {
     if (!profile?.company_id) {
@@ -80,6 +83,31 @@ export function SiteVisits() {
       day: '2-digit',
       month: 'short',
     });
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const getVisitsForDay = (day: number) => {
+    const { year, month } = getDaysInMonth(currentDate);
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return allVisits.filter(v => v.visit_date === dateStr);
+  };
+
+  const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
   };
 
   return (
@@ -192,42 +220,80 @@ export function SiteVisits() {
         )}
       </Card>
 
-      {filteredVisits.length > 0 && (
-        <Card>
-          <div className="px-5 py-4 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-900">Upcoming Visits</h3>
+      <Card>
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-slate-900">
+            {monthNames[month]} {year}
+          </h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-slate-600" />
+            </button>
           </div>
-          <div className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredVisits.slice(0, 9).map((visit) => (
-                <div key={visit.site_visit_id} className="p-4 rounded-lg border border-slate-200/60 hover:border-slate-300 transition-colors">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{visit.lead_name}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{visit.project}</p>
-                    </div>
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600">
-                      {visit.owner?.charAt(0) || '?'}
-                    </div>
+        </div>
+        <div className="p-5">
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            {dayNames.map(day => (
+              <div key={day} className="text-center text-xs font-medium text-slate-500 py-2">
+                {day}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {Array.from({ length: startingDayOfWeek }).map((_, i) => (
+              <div key={`empty-${i}`} className="aspect-square"></div>
+            ))}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dayVisits = getVisitsForDay(day);
+              return (
+                <div
+                  key={day}
+                  className={`aspect-square border rounded-lg p-1.5 transition-all ${
+                    isToday(day)
+                      ? 'border-blue-500 bg-blue-50'
+                      : dayVisits.length > 0
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className={`text-xs font-medium ${isToday(day) ? 'text-blue-700' : 'text-slate-700'}`}>
+                    {day}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(visit.visit_date)}
+                  {dayVisits.length > 0 && (
+                    <div className="mt-1">
+                      {dayVisits.slice(0, 2).map(v => (
+                        <div
+                          key={v.site_visit_id}
+                          onClick={() => navigate(`/leads/${v.lead_id}`)}
+                          className="text-[9px] bg-emerald-600 text-white px-1 py-0.5 rounded truncate mb-0.5 cursor-pointer"
+                          title={`${v.visit_time} - ${v.lead_name}`}
+                        >
+                          {v.visit_time}
+                        </div>
+                      ))}
+                      {dayVisits.length > 2 && (
+                        <div className="text-[9px] text-emerald-700 font-medium">
+                          +{dayVisits.length - 2}
+                        </div>
+                      )}
                     </div>
-                    <span>{visit.visit_time}</span>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-            {filteredVisits.length > 9 && (
-              <p className="text-xs text-slate-500 mt-4 text-center">
-                +{filteredVisits.length - 9} more visits
-              </p>
-            )}
+              );
+            })}
           </div>
-        </Card>
-      )}
+        </div>
+      </Card>
     </div>
   );
 }

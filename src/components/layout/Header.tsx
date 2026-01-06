@@ -14,7 +14,6 @@ const routeTitles: Record<string, string> = {
   '/site-visits': 'Site Visits',
   '/analytics': 'Analytics',
   '/call-analytics': 'Call Analytics',
-  '/calendar': 'Calendar',
   '/agents': 'Agents',
   '/integrations': 'Integrations',
   '/settings': 'Settings',
