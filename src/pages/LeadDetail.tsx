@@ -22,7 +22,6 @@ export function LeadDetail() {
   const [timeline, setTimeline] = useState<Timeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline'>('overview');
-  const [timelineSubTab, setTimelineSubTab] = useState<'history' | 'interactions'>('history');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -534,7 +533,21 @@ export function LeadDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Lead ID</p>
-                  <p className="text-sm font-mono text-slate-600">{lead.id.substring(0, 8)}...</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono text-slate-600">{lead.id.substring(0, 8)}...</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(lead.id);
+                        alert('Lead ID copied!');
+                      }}
+                      className="p-1 hover:bg-slate-100 rounded transition-colors"
+                      title="Copy full ID"
+                    >
+                      <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 {lead.next_follow_up && (
                   <div>
@@ -569,79 +582,41 @@ export function LeadDetail() {
       )}
 
       {activeTab === 'timeline' && (
-        <div className="space-y-6">
-          <div className="flex gap-1">
-            <button
-              onClick={() => setTimelineSubTab('history')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                timelineSubTab === 'history'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              History
-            </button>
-            <button
-              onClick={() => setTimelineSubTab('interactions')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                timelineSubTab === 'interactions'
-                  ? 'bg-slate-900 text-white'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              Interactions
-            </button>
+        <Card>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">Timeline History</h3>
           </div>
-
-          {timelineSubTab === 'history' && (
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Timeline History</h3>
+          <div className="p-5">
+            {timeline.length === 0 ? (
+              <div className="text-center text-sm text-slate-500 py-8">
+                No activity recorded
               </div>
-              <div className="p-5">
-                {timeline.length === 0 ? (
-                  <div className="text-center text-sm text-slate-500 py-8">
-                    No activity recorded
+            ) : (
+              <div className="space-y-4">
+                {timeline.map((event, index) => (
+                  <div key={event.timeline_id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-slate-900"></div>
+                      {index < timeline.length - 1 && <div className="w-px h-10 bg-slate-200 mt-1"></div>}
+                    </div>
+                    <div className="pb-2">
+                      <p className="text-sm text-slate-900">
+                        {event.action_type === 'status_change'
+                          ? `Status changed from ${event.old_value} to ${event.new_value}`
+                          : event.action_type === 'field_edit'
+                          ? `${event.field_changed} updated`
+                          : event.action_type.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {event.user_name} - {formatDateTime(event.created_at)}
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {timeline.map((event, index) => (
-                      <div key={event.timeline_id} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 rounded-full bg-slate-900"></div>
-                          {index < timeline.length - 1 && <div className="w-px h-10 bg-slate-200 mt-1"></div>}
-                        </div>
-                        <div className="pb-2">
-                          <p className="text-sm text-slate-900">
-                            {event.action_type === 'status_change'
-                              ? `Status changed from ${event.old_value} to ${event.new_value}`
-                              : event.action_type === 'field_edit'
-                              ? `${event.field_changed} updated`
-                              : event.action_type.replace(/_/g, ' ')}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {event.user_name} - {formatDateTime(event.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-            </Card>
-          )}
-
-          {timelineSubTab === 'interactions' && (
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Interactions</h3>
-              </div>
-              <div className="p-8 text-center text-sm text-slate-500">
-                No interactions recorded
-              </div>
-            </Card>
-          )}
-        </div>
+            )}
+          </div>
+        </Card>
       )}
 
       {showStatusModal && (

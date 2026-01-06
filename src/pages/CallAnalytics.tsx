@@ -2,219 +2,73 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { RefreshCw, TrendingUp, DollarSign, Clock, Phone } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Clock, Phone } from 'lucide-react';
 import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
 
-interface VapiAnalyticsData {
-  totalCalls: number;
-  totalCost: number;
-  avgDuration: number;
-  successRate: number;
-  costBreakdown: {
-    llm: number;
-    stt: number;
-    tts: number;
-    vapi: number;
-    transport: number;
-  };
-  callsByStatus: Array<{ group: string; count: number }>;
-  callsByAssistant: Array<{ group: string; count: number; avgDuration: number }>;
-}
-
 export function CallAnalytics() {
-  const { user } = useAuth();
-  const { dateRange, setDateRange } = useDateFilter('Last 30 Days');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<VapiAnalyticsData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState('');
+  const { profile } = useAuth();
+  const { dateRange, setDateRange, filterByDate } = useDateFilter('Last 30 Days');
+  const [allCalls, setAllCalls] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadApiKey();
-  }, [user]);
-
-  useEffect(() => {
-    if (apiKey && !data && !loading) {
-      fetchAnalytics();
+    if (profile?.company_id) {
+      loadData();
     }
-  }, [apiKey]);
+  }, [profile]);
 
-  const loadApiKey = async () => {
-    if (!user) return;
+  const loadData = async () => {
+    if (!profile?.company_id) return;
 
     try {
-      const { data, error } = await supabase
-        .from('api_keys')
-        .select('encrypted_key')
-        .eq('user_id', user.id)
-        .eq('service', 'vapi')
-        .eq('key_type', 'private')
-        .maybeSingle();
+      const { data: callsData } = await supabase
+        .from('calls')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      if (data) {
-        setApiKey(data.encrypted_key);
-      }
-    } catch (err) {
-      console.error('Error loading API key:', err);
-    }
-  };
-
-  const fetchAnalytics = async () => {
-    if (!apiKey.trim()) {
-      setError('Please enter your Vapi API key');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const queries = [
-        {
-          table: 'call',
-          name: 'totalCalls',
-          operations: [{ operation: 'count', column: 'id' }],
-        },
-        {
-          table: 'call',
-          name: 'totalCost',
-          operations: [{ operation: 'sum', column: 'cost' }],
-        },
-        {
-          table: 'call',
-          name: 'avgDuration',
-          operations: [{ operation: 'avg', column: 'duration' }],
-        },
-        {
-          table: 'call',
-          name: 'costBreakdown',
-          operations: [
-            { operation: 'sum', column: 'costBreakdown.llm' },
-            { operation: 'sum', column: 'costBreakdown.stt' },
-            { operation: 'sum', column: 'costBreakdown.tts' },
-            { operation: 'sum', column: 'costBreakdown.vapi' },
-            { operation: 'sum', column: 'costBreakdown.transport' },
-          ],
-        },
-        {
-          table: 'call',
-          name: 'successRate',
-          groupBy: ['analysis.successEvaluation'],
-          operations: [{ operation: 'count', column: 'id' }],
-        },
-        {
-          table: 'call',
-          name: 'callsByStatus',
-          groupBy: ['status'],
-          operations: [{ operation: 'count', column: 'id' }],
-        },
-        {
-          table: 'call',
-          name: 'callsByAssistant',
-          groupBy: ['assistantId'],
-          operations: [
-            { operation: 'count', column: 'id' },
-            { operation: 'avg', column: 'duration' },
-          ],
-        },
-      ];
-
-      const response = await fetch('https://api.vapi.ai/analytics', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ queries }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`API error: ${response.status} - ${errorData}`);
-      }
-
-      const results = await response.json();
-
-      const analyticsData: VapiAnalyticsData = {
-        totalCalls: results.find((r: any) => r.name === 'totalCalls')?.result?.[0]?.count || 0,
-        totalCost: results.find((r: any) => r.name === 'totalCost')?.result?.[0]?.sum || 0,
-        avgDuration: results.find((r: any) => r.name === 'avgDuration')?.result?.[0]?.avg || 0,
-        successRate: 0,
-        costBreakdown: {
-          llm: results.find((r: any) => r.name === 'costBreakdown')?.result?.[0]?.['sum_costBreakdown.llm'] || 0,
-          stt: results.find((r: any) => r.name === 'costBreakdown')?.result?.[0]?.['sum_costBreakdown.stt'] || 0,
-          tts: results.find((r: any) => r.name === 'costBreakdown')?.result?.[0]?.['sum_costBreakdown.tts'] || 0,
-          vapi: results.find((r: any) => r.name === 'costBreakdown')?.result?.[0]?.['sum_costBreakdown.vapi'] || 0,
-          transport: results.find((r: any) => r.name === 'costBreakdown')?.result?.[0]?.['sum_costBreakdown.transport'] || 0,
-        },
-        callsByStatus: results.find((r: any) => r.name === 'callsByStatus')?.result?.map((item: any) => ({
-          group: item.group?.status || 'Unknown',
-          count: item.count || 0,
-        })) || [],
-        callsByAssistant: results.find((r: any) => r.name === 'callsByAssistant')?.result?.map((item: any) => ({
-          group: item.group?.assistantId || 'Unknown',
-          count: item.count || 0,
-          avgDuration: item.avg || 0,
-        })) || [],
-      };
-
-      const successResults = results.find((r: any) => r.name === 'successRate')?.result || [];
-      const successful = successResults.find((r: any) => r.group?.['analysis.successEvaluation'] === true)?.count || 0;
-      const failed = successResults.find((r: any) => r.group?.['analysis.successEvaluation'] === false)?.count || 0;
-      analyticsData.successRate = successful + failed > 0 ? (successful / (successful + failed)) * 100 : 0;
-
-      setData(analyticsData);
-    } catch (err) {
-      console.error('Error fetching Vapi analytics:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch analytics');
+      setAllCalls(callsData || []);
+    } catch (error) {
+      console.error('Error loading call data:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const calls = filterByDate(allCalls);
+  const totalCalls = calls.length;
+  const successfulCalls = calls.filter(c => c.success_evaluation).length;
+  const failedCalls = totalCalls - successfulCalls;
+  const avgDuration = calls.length > 0
+    ? Math.round(calls.reduce((sum, c) => sum + (c.duration || 0), 0) / calls.length)
+    : 0;
+  const successRate = totalCalls > 0 ? Math.round((successfulCalls / totalCalls) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-sm text-slate-500">Loading analytics...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Call Analytics</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Vapi call metrics and insights</p>
+          <p className="text-sm text-slate-500 mt-0.5">Call metrics from your leads</p>
         </div>
-        <div className="flex items-center gap-3">
-          <DateFilter value={dateRange} onChange={setDateRange} />
-          <Button onClick={fetchAnalytics} disabled={loading || !apiKey} size="sm">
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Loading...' : 'Refresh'}
-          </Button>
-        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      {error && (
-        <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
-
-      {!apiKey && !loading && (
+      {totalCalls === 0 ? (
         <Card>
-          <div className="p-8 text-center">
-            <p className="text-sm text-slate-600 mb-2">No Vapi API key configured</p>
-            <p className="text-xs text-slate-500">Configure your API key in the Integrations page</p>
+          <div className="p-8 text-center text-sm text-slate-500">
+            No call data in selected date range
           </div>
         </Card>
-      )}
-
-      {loading && !data && (
-        <Card>
-          <div className="p-8 text-center">
-            <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-slate-400" />
-            <p className="text-sm text-slate-500">Loading analytics...</p>
-          </div>
-        </Card>
-      )}
-
-      {data && (
+      ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="stat-card">
@@ -224,123 +78,88 @@ export function CallAnalytics() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Total Calls</p>
-                  <p className="text-lg font-semibold text-slate-900">{data.totalCalls}</p>
+                  <p className="text-lg font-semibold text-slate-900">{totalCalls}</p>
                 </div>
               </div>
             </div>
             <div className="stat-card">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-emerald-50">
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Total Cost</p>
-                  <p className="text-lg font-semibold text-slate-900">${data.totalCost.toFixed(2)}</p>
+                  <p className="text-xs text-slate-500">Successful</p>
+                  <p className="text-lg font-semibold text-emerald-600">{successfulCalls}</p>
                 </div>
               </div>
             </div>
             <div className="stat-card">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-amber-50">
-                  <Clock className="w-4 h-4 text-amber-600" />
+                  <XCircle className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Avg Duration</p>
-                  <p className="text-lg font-semibold text-slate-900">{Math.round(data.avgDuration)}s</p>
+                  <p className="text-xs text-slate-500">Failed</p>
+                  <p className="text-lg font-semibold text-amber-600">{failedCalls}</p>
                 </div>
               </div>
             </div>
             <div className="stat-card">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-slate-100">
-                  <TrendingUp className="w-4 h-4 text-slate-600" />
+                  <Clock className="w-4 h-4 text-slate-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Success Rate</p>
-                  <p className="text-lg font-semibold text-slate-900">{data.successRate.toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500">Avg Duration</p>
+                  <p className="text-lg font-semibold text-slate-900">{avgDuration}s</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Cost Breakdown</h3>
-              </div>
-              <div className="p-5 space-y-4">
-                {[
-                  { label: 'LLM', value: data.costBreakdown.llm, color: 'bg-blue-500' },
-                  { label: 'Speech-to-Text', value: data.costBreakdown.stt, color: 'bg-emerald-500' },
-                  { label: 'Text-to-Speech', value: data.costBreakdown.tts, color: 'bg-amber-500' },
-                  { label: 'Vapi Platform', value: data.costBreakdown.vapi, color: 'bg-slate-500' },
-                  { label: 'Transport', value: data.costBreakdown.transport, color: 'bg-slate-400' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between text-sm mb-1.5">
-                      <span className="text-slate-600">{item.label}</span>
-                      <span className="font-medium text-slate-900">${item.value.toFixed(4)}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5">
-                      <div
-                        className={`${item.color} h-1.5 rounded-full transition-all`}
-                        style={{ width: `${data.totalCost > 0 ? (item.value / data.totalCost) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Calls by Status</h3>
-              </div>
-              <div className="p-5 space-y-2">
-                {data.callsByStatus.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-4">No status data</p>
-                ) : (
-                  data.callsByStatus.map((item) => (
-                    <div key={item.group} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="text-sm font-medium text-slate-700 capitalize">{item.group}</span>
-                      <span className="text-sm font-semibold text-slate-900">{item.count}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
           </div>
 
           <Card>
             <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-900">Performance by Assistant</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Recent Calls</h3>
             </div>
-            {data.callsByAssistant.length === 0 ? (
-              <div className="p-8 text-center text-sm text-slate-500">
-                No assistant data available
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Assistant ID</th>
-                      <th>Total Calls</th>
-                      <th>Avg Duration</th>
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Summary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calls.slice(0, 20).map((call) => (
+                    <tr key={call.call_id}>
+                      <td className="text-slate-600">
+                        {new Date(call.created_at).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="text-slate-600">{call.duration || 0}s</td>
+                      <td>
+                        <span className={`status-badge ${
+                          call.success_evaluation
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}>
+                          {call.success_evaluation ? 'Success' : 'Failed'}
+                        </span>
+                      </td>
+                      <td className="text-slate-600 max-w-md truncate">
+                        {call.summary || 'No summary'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {data.callsByAssistant.map((item, index) => (
-                      <tr key={index}>
-                        <td className="font-mono text-xs text-slate-600">{item.group}</td>
-                        <td className="font-medium text-slate-900">{item.count}</td>
-                        <td className="text-slate-600">{Math.round(item.avgDuration)}s</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </>
       )}
