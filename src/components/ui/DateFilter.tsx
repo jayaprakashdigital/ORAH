@@ -222,12 +222,12 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
 }
 
 export function useDateFilter(defaultLabel = 'Last 7 Days') {
-  const defaultPreset = presets.find(p => p.label === defaultLabel) || presets[2];
-  const { startDate, endDate } = defaultPreset.getValue();
+  const defaultPreset = presets.find(p => p.label === defaultLabel);
+  const initial = defaultPreset ? defaultPreset.getValue() : { startDate: null, endDate: null };
 
   const [dateRange, setDateRange] = useState<DateRange>({
-    startDate,
-    endDate,
+    startDate: initial.startDate,
+    endDate: initial.endDate,
     label: defaultLabel,
   });
 

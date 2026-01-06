@@ -25,7 +25,7 @@ interface DashboardData {
 export function Dashboard() {
   const { profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { dateRange, setDateRange, filterByDate } = useDateFilter('Last 7 Days');
+  const { dateRange, setDateRange, filterByDate } = useDateFilter('All Time');
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [allCalls, setAllCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
