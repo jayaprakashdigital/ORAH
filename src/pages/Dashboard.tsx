@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/ui/Card';
-import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp, ArrowRight, Download } from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp, Download } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -186,87 +187,60 @@ export function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">Recent Leads</h3>
-            <button
-              onClick={() => navigate('/leads')}
-              className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors"
-            >
-              View all <ArrowRight className="w-3 h-3" />
-            </button>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">Lead Status Distribution</h3>
           </div>
           <div className="p-5">
-            {data.recentLeads.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">No leads in this date range</p>
-            ) : (
-              <div className="space-y-2">
-                {data.recentLeads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    onClick={() => navigate(`/leads/${lead.id}`)}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-600">
-                        {lead.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{lead.name}</p>
-                        <p className="text-xs text-slate-500">{lead.mobile}</p>
-                      </div>
-                    </div>
-                    <span className={`status-badge ${
-                      lead.status === 'new' ? 'bg-blue-50 text-blue-700' :
-                      lead.status === 'contacted' ? 'bg-amber-50 text-amber-700' :
-                      lead.status === 'qualified' ? 'bg-emerald-50 text-emerald-700' :
-                      lead.status === 'converted' ? 'bg-green-50 text-green-700' :
-                      'bg-slate-50 text-slate-700'
-                    }`}>
-                      {lead.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'New', value: filteredLeads.filter(l => l.status === 'new').length, color: '#3b82f6' },
+                    { name: 'Contacted', value: filteredLeads.filter(l => l.status === 'contacted').length, color: '#f59e0b' },
+                    { name: 'Qualified', value: filteredLeads.filter(l => l.status === 'qualified').length, color: '#10b981' },
+                    { name: 'Converted', value: filteredLeads.filter(l => l.status === 'converted').length, color: '#059669' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, value }) => value > 0 ? `${name}: ${value}` : ''}
+                >
+                  {[
+                    { name: 'New', value: filteredLeads.filter(l => l.status === 'new').length, color: '#3b82f6' },
+                    { name: 'Contacted', value: filteredLeads.filter(l => l.status === 'contacted').length, color: '#f59e0b' },
+                    { name: 'Qualified', value: filteredLeads.filter(l => l.status === 'qualified').length, color: '#10b981' },
+                    { name: 'Converted', value: filteredLeads.filter(l => l.status === 'converted').length, color: '#059669' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
         <Card>
           <div className="px-5 py-4 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-900">Quick Stats</h3>
+            <h3 className="text-sm font-semibold text-slate-900">Lead Performance</h3>
           </div>
-          <div className="p-5 space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-slate-600">Working Hours Leads</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">{data.workingHoursLeads}</span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-                <span className="text-sm text-slate-600">Non-Working Hours</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">{data.nonWorkingHoursLeads}</span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                <span className="text-sm text-slate-600">Success Rate</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">{successRate}%</span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                <span className="text-sm text-slate-600">Calls Completed</span>
-              </div>
-              <span className="text-sm font-semibold text-slate-900">{data.completedCalls}</span>
-            </div>
+          <div className="p-5">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={[
+                { name: 'Working Hours', count: data.workingHoursLeads },
+                { name: 'Non-Working', count: data.nonWorkingHoursLeads },
+                { name: 'Qualified', count: data.successfulLeads },
+                { name: 'Calls', count: data.totalCalls },
+              ]}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#0f172a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </Card>
       </div>

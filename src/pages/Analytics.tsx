@@ -422,6 +422,67 @@ export function Analytics() {
               </ResponsiveContainer>
             </div>
           </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Lead Status Breakdown</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'New', value: leads.filter(l => l.status === 'new').length, color: '#3b82f6' },
+                        { name: 'Contacted', value: leads.filter(l => l.status === 'contacted').length, color: '#f59e0b' },
+                        { name: 'Qualified', value: leads.filter(l => l.status === 'qualified').length, color: '#10b981' },
+                        { name: 'Converted', value: leads.filter(l => l.status === 'converted').length, color: '#059669' },
+                      ].filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {[
+                        { name: 'New', value: leads.filter(l => l.status === 'new').length, color: '#3b82f6' },
+                        { name: 'Contacted', value: leads.filter(l => l.status === 'contacted').length, color: '#f59e0b' },
+                        { name: 'Qualified', value: leads.filter(l => l.status === 'qualified').length, color: '#10b981' },
+                        { name: 'Converted', value: leads.filter(l => l.status === 'converted').length, color: '#059669' },
+                      ].filter(d => d.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Performance Summary</h3>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50">
+                  <span className="text-sm text-emerald-900 font-medium">Qualified Rate</span>
+                  <span className="text-lg font-bold text-emerald-700">{successRate}%</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
+                  <span className="text-sm text-blue-900 font-medium">Working Hours</span>
+                  <span className="text-lg font-bold text-blue-700">{workingHoursLeads}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50">
+                  <span className="text-sm text-amber-900 font-medium">Nurture Leads</span>
+                  <span className="text-lg font-bold text-amber-700">{failedLeads}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100">
+                  <span className="text-sm text-slate-900 font-medium">Total Leads</span>
+                  <span className="text-lg font-bold text-slate-700">{totalLeads}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
         </>
       )}
     </div>

@@ -132,29 +132,10 @@ export function CallAnalytics() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <Card>
               <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Call Duration Distribution</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Average duration: {avgCallDuration}s</p>
-              </div>
-              <div className="p-6">
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={durationDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="range" stroke="#64748b" tick={{ fontSize: 12 }} />
-                    <YAxis stroke="#64748b" tick={{ fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Cost vs Value Analysis</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Investment comparison</p>
+                <h3 className="text-sm font-semibold text-slate-900">Call Performance Overview</h3>
+                <p className="text-xs text-slate-500 mt-0.5">ROI & efficiency metrics</p>
               </div>
               <div className="p-6">
                 <ResponsiveContainer width="100%" height={280}>
@@ -178,7 +159,6 @@ export function CallAnalytics() {
                 </ResponsiveContainer>
               </div>
             </Card>
-          </div>
 
           <Card>
             <div className="p-6">

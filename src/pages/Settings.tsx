@@ -5,15 +5,19 @@ import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Trash2, CheckCircle } from 'lucide-react';
+import { Trash2, CheckCircle, Key } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function Settings() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState(profile?.name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +65,35 @@ export function Settings() {
     } catch (error) {
       console.error('Error clearing cache:', error);
       setClearing(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!user?.email) return;
+
+    try {
+      setResettingPassword(true);
+      setPasswordMessage(null);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setPasswordMessage({
+        type: 'success',
+        text: 'Password reset link sent to your email'
+      });
+      setTimeout(() => setPasswordMessage(null), 5000);
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      setPasswordMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to send reset email'
+      });
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -154,6 +187,31 @@ export function Settings() {
               <Button onClick={handleClearCache} disabled={clearing} variant="secondary">
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 {clearing ? 'Clearing...' : 'Clear Cache'}
+              </Button>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Password</h3>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-slate-600 mb-4">
+                Reset your password via email verification
+              </p>
+              {passwordMessage && (
+                <div className={`flex items-center gap-2 p-3 rounded-lg text-sm mb-4 ${
+                  passwordMessage.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-red-50 text-red-700'
+                }`}>
+                  {passwordMessage.type === 'success' && <CheckCircle className="w-4 h-4" />}
+                  {passwordMessage.text}
+                </div>
+              )}
+              <Button onClick={handleResetPassword} disabled={resettingPassword} variant="secondary">
+                <Key className="w-3.5 h-3.5 mr-1.5" />
+                {resettingPassword ? 'Sending...' : 'Reset Password'}
               </Button>
             </div>
           </Card>

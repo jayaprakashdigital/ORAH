@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, BarChart3, Bot, Plug, Settings, X, Activity, Calendar } from 'lucide-react';
+import { Home, Users, BarChart3, Bot, Plug, Settings, X, Calendar, PhoneCall } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Logo } from '../ui/Logo';
 
@@ -11,9 +11,9 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', to: '/dashboard', icon: Home },
   { name: 'Leads', to: '/leads', icon: Users },
-  { name: 'Site Visits', to: '/site-visits', icon: Activity },
+  { name: 'Site Visits', to: '/site-visits', icon: Calendar },
   { name: 'Analytics', to: '/analytics', icon: BarChart3 },
-  { name: 'Call Analytics', to: '/call-analytics', icon: Activity },
+  { name: 'Call Analytics', to: '/call-analytics', icon: PhoneCall },
   { name: 'Agents', to: '/agents', icon: Bot },
   { name: 'Integrations', to: '/integrations', icon: Plug },
   { name: 'Settings', to: '/settings', icon: Settings },
