@@ -81,12 +81,19 @@ async function getAccessToken(): Promise<string> {
   });
 
   const tokenData = await tokenResponse.json();
+
+  if (!tokenResponse.ok || !tokenData.access_token) {
+    console.error('[AUTH] Token error:', tokenData);
+    throw new Error(`Failed to get access token: ${JSON.stringify(tokenData)}`);
+  }
+
+  console.log('[AUTH] Access token obtained successfully');
   return tokenData.access_token;
 }
 
 async function fetchSheetData(accessToken: string, sheetId: string, tabName: string) {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${tabName}`;
-  
+
   const response = await fetch(url, {
     headers: {
       'Authorization': `Bearer ${accessToken}`,
@@ -94,7 +101,9 @@ async function fetchSheetData(accessToken: string, sheetId: string, tabName: str
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch sheet data: ${response.statusText}`);
+    const errorBody = await response.text();
+    console.error('[SHEETS_API] Error:', response.status, errorBody);
+    throw new Error(`Failed to fetch sheet data: ${response.statusText} - ${errorBody}`);
   }
 
   return await response.json();

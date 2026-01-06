@@ -104,7 +104,7 @@ export function useAutoSync(enabled: boolean = true) {
 
     intervalRef.current = setInterval(() => {
       syncNow();
-    }, 30000);
+    }, 2000);
 
     return () => {
       if (intervalRef.current) {
