@@ -7,6 +7,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { Dashboard } from './pages/Dashboard';
 import { Leads } from './pages/Leads';
 import { LeadDetail } from './pages/LeadDetail';
+import { SiteVisits } from './pages/SiteVisits';
 import { Analytics } from './pages/Analytics';
 import { Agents } from './pages/Agents';
 import { Integrations } from './pages/Integrations';
@@ -91,6 +92,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="leads" element={<Leads />} />
             <Route path="leads/:id" element={<LeadDetail />} />
+            <Route path="site-visits" element={<SiteVisits />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="agents" element={<Agents />} />
             <Route path="integrations" element={<Integrations />} />

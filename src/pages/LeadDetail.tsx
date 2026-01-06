@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ChevronRight, Phone, Mail, IndianRupee, Calendar, MapPin, Home, Edit, Video, CheckCircle2, Play } from 'lucide-react';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
+import { ChevronRight, Phone, Mail, IndianRupee, Calendar, MapPin, Home, Edit, Video, CheckCircle2, Play, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
@@ -12,9 +15,30 @@ type Call = Database['public']['Tables']['calls']['Row'];
 export function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [lead, setLead] = useState<Lead | null>(null);
   const [latestCall, setLatestCall] = useState<Call | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [nextVisit, setNextVisit] = useState<any>(null);
+
+  const [editForm, setEditForm] = useState({
+    name: '',
+    mobile: '',
+    email: '',
+    budget: '',
+    possession_timeline: '',
+    unit_preference: '',
+    location_preference: '',
+  });
+
+  const [scheduleForm, setScheduleForm] = useState({
+    project: '',
+    visit_date: '',
+    visit_time: '',
+  });
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -30,6 +54,18 @@ export function LeadDetail() {
         if (leadError) throw leadError;
         setLead(leadData);
 
+        if (leadData) {
+          setEditForm({
+            name: leadData.name,
+            mobile: leadData.mobile,
+            email: leadData.email || '',
+            budget: leadData.budget || '',
+            possession_timeline: leadData.possession_timeline || '',
+            unit_preference: leadData.unit_preference || '',
+            location_preference: leadData.location_preference || '',
+          });
+        }
+
         const { data: callData } = await supabase
           .from('calls')
           .select('*')
@@ -39,6 +75,16 @@ export function LeadDetail() {
           .maybeSingle();
 
         setLatestCall(callData);
+
+        const { data: visitData } = await supabase
+          .from('site_visits')
+          .select('*')
+          .eq('lead_id', id)
+          .order('visit_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        setNextVisit(visitData);
       } catch (error) {
         console.error('Error fetching lead:', error);
       } finally {
@@ -84,6 +130,91 @@ export function LeadDetail() {
     });
   };
 
+  const getNextOwner = async () => {
+    const owners = ['JP', 'Raghu', 'User3', 'User4', 'User5'];
+    const { data: visits } = await supabase
+      .from('site_visits')
+      .select('owner')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const lastOwner = visits?.[0]?.owner;
+    const lastIndex = owners.indexOf(lastOwner);
+    return owners[(lastIndex + 1) % owners.length];
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lead) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          name: editForm.name,
+          mobile: editForm.mobile,
+          email: editForm.email || null,
+          budget: editForm.budget || null,
+          possession_timeline: editForm.possession_timeline || null,
+          unit_preference: editForm.unit_preference || null,
+          location_preference: editForm.location_preference || null,
+        })
+        .eq('id', lead.id);
+
+      if (error) throw error;
+
+      setLead({ ...lead, ...editForm });
+      setShowEditModal(false);
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update lead');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lead || !profile?.company_id) return;
+
+    try {
+      setSaving(true);
+      const owner = await getNextOwner();
+
+      const { error } = await supabase
+        .from('site_visits')
+        .insert({
+          lead_id: lead.id,
+          company_id: profile.company_id,
+          project: scheduleForm.project,
+          visit_date: scheduleForm.visit_date,
+          visit_time: scheduleForm.visit_time,
+          owner,
+        });
+
+      if (error) throw error;
+
+      setShowScheduleModal(false);
+      setScheduleForm({ project: '', visit_date: '', visit_time: '' });
+
+      const { data: visitData } = await supabase
+        .from('site_visits')
+        .select('*')
+        .eq('lead_id', lead.id)
+        .order('visit_date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      setNextVisit(visitData);
+    } catch (error) {
+      console.error('Error scheduling visit:', error);
+      alert(error instanceof Error ? error.message : 'Failed to schedule visit');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 text-center">
@@ -122,16 +253,43 @@ export function LeadDetail() {
             <Phone className="w-4 h-4 mr-2" />
             Call Lead
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowEditModal(true)}>
             <Edit className="w-4 h-4 mr-2" />
             Edit Lead
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
             <Calendar className="w-4 h-4 mr-2" />
             Schedule Site Visit
           </Button>
         </div>
       </div>
+
+      {nextVisit && (
+        <Card>
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Action Intelligence</h2>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="flex items-start gap-3">
+                <Home className="w-5 h-5 text-slate-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-slate-500">Assigned Owner</p>
+                  <p className="text-base font-medium text-slate-900">{nextVisit.owner}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-slate-500">Next Site Visit</p>
+                  <p className="text-base font-medium text-slate-900">
+                    {new Date(nextVisit.visit_date).toLocaleDateString('en-IN')} at {nextVisit.visit_time}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">{nextVisit.project}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div className="p-6">
@@ -271,6 +429,169 @@ export function LeadDetail() {
             No call history available for this lead
           </div>
         </Card>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Edit Lead</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1 hover:bg-slate-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-mobile">Mobile</Label>
+                <Input
+                  id="edit-mobile"
+                  value={editForm.mobile}
+                  onChange={(e) => setEditForm({ ...editForm, mobile: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-budget">Budget</Label>
+                <Input
+                  id="edit-budget"
+                  value={editForm.budget}
+                  onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-timeline">Possession Timeline</Label>
+                <Input
+                  id="edit-timeline"
+                  value={editForm.possession_timeline}
+                  onChange={(e) => setEditForm({ ...editForm, possession_timeline: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-unit">Unit Preference</Label>
+                <Input
+                  id="edit-unit"
+                  value={editForm.unit_preference}
+                  onChange={(e) => setEditForm({ ...editForm, unit_preference: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-location">Location Preference</Label>
+                <Input
+                  id="edit-location"
+                  value={editForm.location_preference}
+                  onChange={(e) => setEditForm({ ...editForm, location_preference: e.target.value })}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving} className="flex-1">
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Schedule Site Visit</h3>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="p-1 hover:bg-slate-100 rounded"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleScheduleSubmit} className="p-6 space-y-4">
+              <div>
+                <Label htmlFor="project">Project</Label>
+                <Input
+                  id="project"
+                  value={scheduleForm.project}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, project: e.target.value })}
+                  placeholder="e.g., Whitefield Plaza"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="visit-date">Visit Date</Label>
+                <Input
+                  id="visit-date"
+                  type="date"
+                  value={scheduleForm.visit_date}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, visit_date: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="visit-time">Visit Time</Label>
+                <Input
+                  id="visit-time"
+                  type="time"
+                  value={scheduleForm.visit_time}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, visit_time: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowScheduleModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving} className="flex-1">
+                  {saving ? 'Scheduling...' : 'Schedule'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
