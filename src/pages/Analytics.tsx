@@ -356,58 +356,59 @@ export function Analytics() {
             </div>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Unit Preference</h3>
-              </div>
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={unitPreferenceData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="unit" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
+          <Card>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Unit Preference</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Most preferred property types</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={unitPreferenceData} layout="vertical" margin={{ left: 140, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" stroke="#64748b" tick={{ fontSize: 13 }} />
+                  <YAxis type="category" dataKey="unit" width={130} tick={{ fontSize: 12 }} stroke="#64748b" />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Top Locations</h3>
-              </div>
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={locationData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="location" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
+          <Card>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Top Locations</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Most inquired locations</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={locationData} layout="vertical" margin={{ left: 140, right: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis type="number" stroke="#64748b" tick={{ fontSize: 13 }} />
+                  <YAxis type="category" dataKey="location" width={130} tick={{ fontSize: 12 }} stroke="#64748b" />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                  <Bar dataKey="count" fill="#f59e0b" radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
-            <Card>
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h3 className="text-sm font-semibold text-slate-900">Budget Distribution</h3>
-              </div>
-              <div className="p-5">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={budgetData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="range" tick={{ fontSize: 10 }} stroke="#64748b" />
-                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#64748b" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
+          <Card>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Budget Distribution</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Lead budget ranges</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={budgetData} margin={{ bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="range" stroke="#64748b" tick={{ fontSize: 12 }} angle={-15} textAnchor="end" height={60} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 13 }} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                  <Bar dataKey="count" fill="#64748b" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         </>
       )}
     </div>

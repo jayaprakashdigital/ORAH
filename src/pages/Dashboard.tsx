@@ -7,6 +7,7 @@ import { Database } from '../lib/database.types';
 import { getTimeCategory } from '../lib/timeClassification';
 import { useNavigate } from 'react-router-dom';
 import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
+import { ExecutiveSummary } from '../components/ExecutiveSummary';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
 
@@ -63,6 +64,8 @@ export function Dashboard() {
     };
 
     fetchData();
+    const interval = setInterval(fetchData, 2000);
+    return () => clearInterval(interval);
   }, [profile?.company_id, authLoading]);
 
   const filteredLeads = filterByDate(allLeads);
@@ -95,6 +98,10 @@ export function Dashboard() {
   const successRate = data.totalLeads > 0
     ? Math.round((data.successfulLeads / data.totalLeads) * 100)
     : 0;
+
+  const convertedLeads = filteredLeads.filter(l => l.status === 'converted').length;
+  const avgLeadValue = 12000000;
+  const totalRevenue = convertedLeads * avgLeadValue;
 
   const kpis = [
     { title: 'Total Leads', value: data.totalLeads.toString(), icon: Users, color: 'text-slate-600', bgColor: 'bg-slate-100' },
@@ -227,22 +234,35 @@ export function Dashboard() {
       </div>
 
       {allLeads.length > 0 && (
-        <Card>
-          <div className="p-5 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Analytics</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                View detailed charts and time-based analysis
-              </p>
+        <>
+          <ExecutiveSummary
+            totalLeads={data.totalLeads}
+            workingHoursLeads={data.workingHoursLeads}
+            nonWorkingHoursLeads={data.nonWorkingHoursLeads}
+            qualifiedLeads={data.successfulLeads}
+            convertedLeads={convertedLeads}
+            nurturedLeads={data.successfulLeads + data.failedLeads}
+            avgLeadValue={avgLeadValue}
+            totalRevenue={totalRevenue}
+          />
+
+          <Card>
+            <div className="p-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Detailed Analytics</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  View comprehensive charts and time-based analysis
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/analytics')}
+                className="h-9 px-4 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                View Analytics
+              </button>
             </div>
-            <button
-              onClick={() => navigate('/analytics')}
-              className="h-9 px-4 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              View Analytics
-            </button>
-          </div>
-        </Card>
+          </Card>
+        </>
       )}
     </div>
   );
