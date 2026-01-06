@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Calendar, User } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { Calendar, User, MapPin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -79,7 +79,6 @@ export function SiteVisits() {
     return new Date(dateStr).toLocaleDateString('en-IN', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric',
     });
   };
 
@@ -87,112 +86,148 @@ export function SiteVisits() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Site Visits</h2>
-          <p className="text-slate-500">Manage and track property site visits</p>
+          <h1 className="text-xl font-semibold text-slate-900">Site Visits</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Track and manage property site visits</p>
         </div>
         <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <div className="p-4">
-            <p className="text-sm text-slate-500">Today's Visits</p>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{todayCount}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="stat-card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-50">
+              <Calendar className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Today</p>
+              <p className="text-lg font-semibold text-slate-900">{todayCount}</p>
+            </div>
           </div>
-        </Card>
-        <Card>
-          <div className="p-4">
-            <p className="text-sm text-slate-500">This Week</p>
-            <p className="text-3xl font-bold text-green-600 mt-2">{weekCount}</p>
+        </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-50">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">This Week</p>
+              <p className="text-lg font-semibold text-slate-900">{weekCount}</p>
+            </div>
           </div>
-        </Card>
+        </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-slate-100">
+              <MapPin className="w-4 h-4 text-slate-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">In Range</p>
+              <p className="text-lg font-semibold text-slate-900">{filteredVisits.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-slate-100">
+              <User className="w-4 h-4 text-slate-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">Total</p>
+              <p className="text-lg font-semibold text-slate-900">{allVisits.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Site Visits ({filteredVisits.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="py-8 text-center text-slate-500">
-              Loading site visits...
-            </div>
-          ) : filteredVisits.length === 0 ? (
-            <div className="py-8 text-center text-slate-500">
-              No site visits in selected date range
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Lead Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Project</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Time</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Owner</th>
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-900">Scheduled Visits</h3>
+          <p className="text-xs text-slate-500 mt-0.5">{filteredVisits.length} visits in selected range</p>
+        </div>
+        {loading ? (
+          <div className="p-8 text-center text-sm text-slate-500">
+            Loading site visits...
+          </div>
+        ) : filteredVisits.length === 0 ? (
+          <div className="p-8 text-center text-sm text-slate-500">
+            No site visits in selected date range
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Project</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Owner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredVisits.map((visit) => (
+                  <tr key={visit.site_visit_id}>
+                    <td className="font-medium text-slate-900">{visit.lead_name}</td>
+                    <td className="text-slate-600">{visit.project}</td>
+                    <td>
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {formatDate(visit.visit_date)}
+                      </div>
+                    </td>
+                    <td className="text-slate-600">{visit.visit_time}</td>
+                    <td>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600">
+                          {visit.owner?.charAt(0) || '?'}
+                        </div>
+                        <span className="text-sm text-slate-900">{visit.owner}</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredVisits.map((visit) => (
-                    <tr key={visit.site_visit_id} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="py-3 px-4 text-sm font-medium text-slate-900">{visit.lead_name}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{visit.project}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                          {formatDate(visit.visit_date)}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{visit.visit_time}</td>
-                      <td className="py-3 px-4 text-sm">
-                        <div className="flex items-center gap-2 text-blue-600 font-medium">
-                          <User className="w-4 h-4" />
-                          {visit.owner}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Upcoming Visits</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredVisits.slice(0, 10).map((visit) => (
-              <div key={visit.site_visit_id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-slate-900">{visit.lead_name}</p>
-                    <p className="text-sm text-slate-500 mt-1">{visit.project}</p>
-                    <div className="flex items-center gap-1 mt-2 text-xs text-slate-600">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(visit.visit_date)} at {visit.visit_time}
+      {filteredVisits.length > 0 && (
+        <Card>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">Upcoming Visits</h3>
+          </div>
+          <div className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVisits.slice(0, 9).map((visit) => (
+                <div key={visit.site_visit_id} className="p-4 rounded-lg border border-slate-200/60 hover:border-slate-300 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{visit.lead_name}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{visit.project}</p>
                     </div>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
-                      <User className="w-3 h-3" />
-                      {visit.owner}
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600">
+                      {visit.owner?.charAt(0) || '?'}
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(visit.visit_date)}
+                    </div>
+                    <span>{visit.visit_time}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {filteredVisits.length > 9 && (
+              <p className="text-xs text-slate-500 mt-4 text-center">
+                +{filteredVisits.length - 9} more visits
+              </p>
+            )}
           </div>
-          {filteredVisits.length > 10 && (
-            <p className="text-sm text-slate-500 mt-4">
-              Showing 10 of {filteredVisits.length} visits
-            </p>
-          )}
-          {filteredVisits.length === 0 && (
-            <p className="text-sm text-slate-500">No visits in selected date range</p>
-          )}
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

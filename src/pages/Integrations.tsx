@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Phone, FileSpreadsheet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -95,7 +95,7 @@ export function Integrations() {
         });
 
       if (error) throw error;
-      setVapiMessage({ type: 'success', text: 'Vapi API key saved successfully' });
+      setVapiMessage({ type: 'success', text: 'API key saved successfully' });
       setTimeout(() => setVapiMessage(null), 3000);
     } catch (err) {
       console.error('Error saving Vapi API key:', err);
@@ -155,14 +155,11 @@ export function Integrations() {
 
       if (result.success) {
         if (result.warning) {
-          setMessage({
-            type: 'error',
-            text: result.warning
-          });
+          setMessage({ type: 'error', text: result.warning });
         } else {
           setMessage({
             type: 'success',
-            text: `Config saved! Synced ${result.rowsSynced} leads. Auto-sync is now active.`
+            text: `Synced ${result.rowsSynced} leads. Auto-sync is now active.`
           });
         }
         loadSyncLogs();
@@ -183,83 +180,85 @@ export function Integrations() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">Integrations</h2>
-        <p className="text-slate-500">Connect your tools and services</p>
+        <h1 className="text-xl font-semibold text-slate-900">Integrations</h1>
+        <p className="text-sm text-slate-500 mt-0.5">Connect your tools and services</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary-50 rounded-lg">
-              <Phone className="w-6 h-6 text-primary" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-blue-50">
+                <Phone className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Vapi Voice AI</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Connect for AI voice calls</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-lg">Vapi Voice AI</CardTitle>
-              <p className="text-sm text-slate-500 mt-1">Connect your Vapi account for AI voice calls</p>
-              <p className="text-sm text-slate-400 mt-2">
-                Status: {vapiApiKey ? 'Connected' : 'Not Connected'}
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${vapiApiKey ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+              <span className="text-xs text-slate-500">{vapiApiKey ? 'Connected' : 'Not Connected'}</span>
+            </div>
+
+            <div>
+              <Label htmlFor="vapiApiKey">API Key</Label>
+              <Input
+                id="vapiApiKey"
+                type="password"
+                placeholder="Enter your Vapi API key"
+                value={vapiApiKey}
+                onChange={(e) => setVapiApiKey(e.target.value)}
+                disabled={vapiLoading}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Get your key from <a href="https://dashboard.vapi.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">dashboard.vapi.ai</a>
               </p>
             </div>
-          </div>
-        </CardHeader>
 
-        <div className="px-6 pb-6 space-y-4">
-          <div>
-            <Label htmlFor="vapiApiKey">Vapi API Key</Label>
-            <Input
-              id="vapiApiKey"
-              type="password"
-              placeholder="Enter your Vapi API key"
-              value={vapiApiKey}
-              onChange={(e) => setVapiApiKey(e.target.value)}
-              disabled={vapiLoading}
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Get your API key from <a href="https://dashboard.vapi.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.vapi.ai</a>
-            </p>
-          </div>
-
-          <Button onClick={handleSaveVapiKey} disabled={vapiLoading} className="w-full">
-            {vapiLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              'Save API Key'
-            )}
-          </Button>
-
-          {vapiMessage && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg ${
-              vapiMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-              {vapiMessage.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <Button onClick={handleSaveVapiKey} disabled={vapiLoading} className="w-full">
+              {vapiLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Saving...
+                </>
               ) : (
-                <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                'Save API Key'
               )}
-              <p className="text-sm">{vapiMessage.text}</p>
-            </div>
-          )}
-        </div>
-      </Card>
+            </Button>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-primary-50 rounded-lg">
-              <FileSpreadsheet className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <CardTitle className="text-lg">Google Sheets Sync</CardTitle>
-              <p className="text-sm text-slate-500 mt-1">Import leads from Google Sheets</p>
+            {vapiMessage && (
+              <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+                vapiMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              }`}>
+                {vapiMessage.type === 'success' ? (
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                )}
+                <p>{vapiMessage.text}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-emerald-50">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Google Sheets</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Import leads from sheets</p>
+              </div>
             </div>
           </div>
-        </CardHeader>
 
-        <div className="px-6 pb-6 space-y-4">
-          <div className="space-y-3">
+          <div className="p-5 space-y-4">
             <div>
               <Label htmlFor="sheetId">Sheet ID</Label>
               <Input
@@ -270,7 +269,7 @@ export function Integrations() {
                 disabled={loading}
               />
               <p className="text-xs text-slate-500 mt-1">
-                Find this in your Google Sheet URL: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit
+                Find in URL: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit
               </p>
             </div>
 
@@ -284,70 +283,77 @@ export function Integrations() {
                 disabled={loading}
               />
             </div>
-          </div>
 
-          <Button onClick={handleSync} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              'Sync Now'
-            )}
-          </Button>
-
-          {message && (
-            <div className={`flex items-start gap-2 p-3 rounded-lg ${
-              message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-            }`}>
-              {message.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <Button onClick={handleSync} disabled={loading} className="w-full">
+              {loading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  Syncing...
+                </>
               ) : (
-                <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                'Sync Now'
               )}
-              <p className="text-sm">{message.text}</p>
-            </div>
-          )}
+            </Button>
 
-          {syncLogs.length > 0 && (
-            <div className="mt-6 pt-6 border-t">
-              <h4 className="text-sm font-medium mb-3">Recent Syncs</h4>
-              <div className="space-y-2">
-                {syncLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      {log.status === 'success' ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className="text-slate-600">
-                        {log.status === 'success'
-                          ? `${log.rows_synced} leads synced`
-                          : log.error_message || 'Failed'}
-                      </span>
-                    </div>
-                    <span className="text-slate-400">
-                      {new Date(log.created_at).toLocaleString()}
+            {message && (
+              <div className={`flex items-start gap-2 p-3 rounded-lg text-sm ${
+                message.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              }`}>
+                {message.type === 'success' ? (
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                )}
+                <p>{message.text}</p>
+              </div>
+            )}
+
+            <div className="p-3 bg-slate-50 rounded-lg">
+              <p className="text-xs text-slate-600 font-medium mb-1">Required Columns:</p>
+              <p className="text-xs text-slate-500">name, mobile (required), email, budget, possession, unit preference, location preference, notes</p>
+              <p className="text-xs text-slate-500 mt-2">
+                Share sheet with: <span className="font-mono text-slate-600">orah-sheets-sync@aigf-c4.iam.gserviceaccount.com</span>
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {syncLogs.length > 0 && (
+        <Card>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">Recent Syncs</h3>
+          </div>
+          <div className="p-5">
+            <div className="space-y-2">
+              {syncLogs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    {log.status === 'success' ? (
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-red-600" />
+                    )}
+                    <span className="text-sm text-slate-700">
+                      {log.status === 'success'
+                        ? `${log.rows_synced} leads synced`
+                        : log.error_message || 'Failed'}
                     </span>
                   </div>
-                ))}
-              </div>
+                  <span className="text-xs text-slate-500">
+                    {new Date(log.created_at).toLocaleString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+              ))}
             </div>
-          )}
-
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-600 font-medium mb-2">Required Sheet Columns:</p>
-            <p className="text-xs text-slate-500">
-              name, mobile (required), email, budget, possession, unit preference, location preference, notes
-            </p>
-            <p className="text-xs text-slate-500 mt-2">
-              <strong>Important:</strong> Share your sheet with: orah-sheets-sync@aigf-c4.iam.gserviceaccount.com
-            </p>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

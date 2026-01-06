@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '../components/ui/Card';
-import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { Users, CheckCircle2, XCircle, Phone, Clock, TrendingUp, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -89,7 +89,7 @@ export function Dashboard() {
     nonWorkingHoursLeads: filteredLeads.length - workingHoursLeads,
     recentLeads: filteredLeads.slice(0, 5),
     totalCalls: filteredCalls.length,
-    completedCalls: filteredCalls.filter(c => c.status === 'completed').length,
+    completedCalls: filteredCalls.filter(c => c.status === 'connected').length,
   };
 
   const successRate = data.totalLeads > 0
@@ -97,18 +97,18 @@ export function Dashboard() {
     : 0;
 
   const kpis = [
-    { title: 'Total Leads', value: data.totalLeads.toString(), icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-    { title: 'Successful Leads', value: data.successfulLeads.toString(), icon: CheckCircle2, color: 'text-green-600', bgColor: 'bg-green-100' },
-    { title: 'Failed/Nurture', value: data.failedLeads.toString(), icon: XCircle, color: 'text-red-600', bgColor: 'bg-red-100' },
-    { title: 'Success Rate', value: `${successRate}%`, icon: TrendingUp, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-    { title: 'Total Calls', value: data.totalCalls.toString(), icon: Phone, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
-    { title: 'Working Hours Leads', value: data.workingHoursLeads.toString(), icon: Clock, color: 'text-teal-600', bgColor: 'bg-teal-100' },
+    { title: 'Total Leads', value: data.totalLeads.toString(), icon: Users, color: 'text-slate-600', bgColor: 'bg-slate-100' },
+    { title: 'Qualified', value: data.successfulLeads.toString(), icon: CheckCircle2, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+    { title: 'Nurture', value: data.failedLeads.toString(), icon: XCircle, color: 'text-amber-600', bgColor: 'bg-amber-50' },
+    { title: 'Success Rate', value: `${successRate}%`, icon: TrendingUp, color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    { title: 'Total Calls', value: data.totalCalls.toString(), icon: Phone, color: 'text-slate-600', bgColor: 'bg-slate-100' },
+    { title: 'Working Hours', value: data.workingHoursLeads.toString(), icon: Clock, color: 'text-slate-600', bgColor: 'bg-slate-100' },
   ];
 
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-slate-500">Loading dashboard...</p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-sm text-slate-500">Loading...</div>
       </div>
     );
   }
@@ -117,59 +117,68 @@ export function Dashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Dashboard</h2>
-          <p className="text-slate-500">Quick overview of your lead management</p>
+          <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Overview of your lead management</p>
         </div>
         <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {kpis.map((kpi) => (
-          <Card key={kpi.title} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-500">{kpi.title}</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{kpi.value}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${kpi.bgColor}`}>
-                  <kpi.icon className={`w-7 h-7 ${kpi.color}`} />
-                </div>
+          <div key={kpi.title} className="stat-card">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
+                <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-xs text-slate-500">{kpi.title}</p>
+                <p className="text-lg font-semibold text-slate-900">{kpi.value}</p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Leads</h3>
+          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900">Recent Leads</h3>
+            <button
+              onClick={() => navigate('/leads')}
+              className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors"
+            >
+              View all <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="p-5">
             {data.recentLeads.length === 0 ? (
-              <p className="text-sm text-slate-500">No leads in this date range.</p>
+              <p className="text-sm text-slate-500 text-center py-4">No leads in this date range</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {data.recentLeads.map((lead) => (
                   <div
                     key={lead.id}
                     onClick={() => navigate(`/leads/${lead.id}`)}
-                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
                   >
-                    <div>
-                      <p className="font-medium text-slate-900">{lead.name}</p>
-                      <p className="text-sm text-slate-500">{lead.mobile}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-sm font-medium text-slate-600">
+                        {lead.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{lead.name}</p>
+                        <p className="text-xs text-slate-500">{lead.mobile}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                        lead.status === 'new' ? 'bg-blue-100 text-blue-700' :
-                        lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-700' :
-                        lead.status === 'qualified' ? 'bg-green-100 text-green-700' :
-                        lead.status === 'converted' ? 'bg-emerald-100 text-emerald-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {lead.status}
-                      </span>
-                    </div>
+                    <span className={`status-badge ${
+                      lead.status === 'new' ? 'bg-blue-50 text-blue-700' :
+                      lead.status === 'contacted' ? 'bg-amber-50 text-amber-700' :
+                      lead.status === 'qualified' ? 'bg-emerald-50 text-emerald-700' :
+                      lead.status === 'converted' ? 'bg-green-50 text-green-700' :
+                      'bg-slate-50 text-slate-700'
+                    }`}>
+                      {lead.status}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -178,40 +187,40 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-slate-700">Working Hours Leads</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{data.workingHoursLeads}</span>
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-900">Quick Stats</h3>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm text-slate-600">Working Hours Leads</span>
               </div>
+              <span className="text-sm font-semibold text-slate-900">{data.workingHoursLeads}</span>
+            </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-slate-700">Non-Working Hours</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{data.nonWorkingHoursLeads}</span>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                <span className="text-sm text-slate-600">Non-Working Hours</span>
               </div>
+              <span className="text-sm font-semibold text-slate-900">{data.nonWorkingHoursLeads}</span>
+            </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-slate-700">Success Rate</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{successRate}%</span>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                <span className="text-sm text-slate-600">Success Rate</span>
               </div>
+              <span className="text-sm font-semibold text-slate-900">{successRate}%</span>
+            </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
-                  <span className="text-sm font-medium text-slate-700">Calls Completed</span>
-                </div>
-                <span className="text-lg font-bold text-slate-900">{data.completedCalls}</span>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <span className="text-sm text-slate-600">Calls Completed</span>
               </div>
+              <span className="text-sm font-semibold text-slate-900">{data.completedCalls}</span>
             </div>
           </div>
         </Card>
@@ -219,21 +228,19 @@ export function Dashboard() {
 
       {allLeads.length > 0 && (
         <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Want deeper insights?</h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  Visit the Analytics page for detailed charts, time-based analysis, and interactive filters.
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/analytics')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                View Analytics
-              </button>
+          <div className="p-5 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Analytics</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                View detailed charts and time-based analysis
+              </p>
             </div>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="h-9 px-4 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              View Analytics
+            </button>
           </div>
         </Card>
       )}

@@ -31,7 +31,6 @@ export function Agents() {
     if (authLoading) return;
 
     if (!profile?.company_id) {
-      console.warn('[AGENTS] No company_id available');
       setLoading(false);
       return;
     }
@@ -51,7 +50,6 @@ export function Agents() {
       setAgents(data || []);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load agents';
-      console.error('[AGENTS] Error:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -126,99 +124,93 @@ export function Agents() {
       setEditingAgent(null);
       await fetchAgents();
     } catch (err) {
-      console.error('[AGENTS] Error saving agent:', err);
       alert(err instanceof Error ? err.message : 'Failed to save agent');
     } finally {
       setSaving(false);
     }
   };
 
-  const getStatusColor = (status: boolean) => {
-    return status ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Agents</h2>
-          <p className="text-slate-500">Manage your AI voice agents</p>
+          <h1 className="text-xl font-semibold text-slate-900">Agents</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage your AI voice agents</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button onClick={() => handleOpenModal()} size="sm">
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Create Agent
         </Button>
       </div>
 
       {loading ? (
         <Card>
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             Loading agents...
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div className="p-8 text-center">
-            <p className="text-red-600 mb-2">Error loading agents</p>
-            <p className="text-sm text-slate-500">{error}</p>
+            <p className="text-sm text-red-600 mb-1">Error loading agents</p>
+            <p className="text-xs text-slate-500">{error}</p>
           </div>
         </Card>
       ) : agents.length === 0 ? (
         <Card>
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             No agents configured yet. Click "Create Agent" to get started.
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {agents.map((agent) => (
-            <Card key={agent.id} className="hover:shadow-md transition-shadow">
-              <div className="p-6">
+            <Card key={agent.id}>
+              <div className="p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-lg bg-blue-100">
-                      <Sparkles className="w-6 h-6 text-blue-600" />
+                    <div className="p-2.5 rounded-lg bg-slate-100">
+                      <Sparkles className="w-5 h-5 text-slate-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-slate-900">{agent.name}</h3>
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(agent.is_active)}`}>
+                      <h3 className="text-sm font-semibold text-slate-900">{agent.name}</h3>
+                      <span className={`status-badge mt-1 ${
+                        agent.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-600'
+                      }`}>
                         {agent.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => handleOpenModal(agent)}
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
                   >
-                    <Edit2 className="w-4 h-4 text-slate-600" />
+                    <Edit2 className="w-4 h-4 text-slate-500" />
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="text-sm">
-                    <span className="text-slate-500">Voice:</span>
-                    <span className="ml-2 text-slate-900">{agent.voice_id || 'Default'}</span>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Voice</p>
+                    <p className="text-sm text-slate-900">{agent.voice_id || 'Default'}</p>
                   </div>
 
-                  <div className="text-sm">
-                    <span className="text-slate-500">Personality:</span>
-                    <p className="mt-1 text-slate-700 line-clamp-3">{agent.personality}</p>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-0.5">Personality</p>
+                    <p className="text-sm text-slate-700 line-clamp-2">{agent.personality}</p>
                   </div>
 
                   {agent.greeting && (
-                    <div className="text-sm">
-                      <span className="text-slate-500">Greeting:</span>
-                      <p className="mt-1 text-slate-700 italic line-clamp-2">"{agent.greeting}"</p>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-0.5">Greeting</p>
+                      <p className="text-sm text-slate-600 italic line-clamp-2">"{agent.greeting}"</p>
                     </div>
                   )}
 
-                  <div className="pt-3 border-t">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Stats</span>
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <Phone className="w-4 h-4" />
-                        <span>Ready for calls</span>
-                      </div>
+                  <div className="pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>Ready for calls</span>
                     </div>
                   </div>
                 </div>
@@ -229,21 +221,21 @@ export function Agents() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">
-                {editingAgent ? 'Edit Agent' : 'Create New Agent'}
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-900">
+                {editingAgent ? 'Edit Agent' : 'Create Agent'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-slate-100 rounded"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveAgent} className="p-6 space-y-4">
+            <form onSubmit={handleSaveAgent} className="p-5 space-y-4">
               <div>
                 <Label htmlFor="name">Agent Name *</Label>
                 <Input
@@ -264,7 +256,7 @@ export function Agents() {
                   required
                   placeholder="Describe the agent's personality and behavior..."
                   rows={4}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                 />
               </div>
 
@@ -276,7 +268,7 @@ export function Agents() {
                   onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
                   placeholder="Initial greeting when the call starts..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                 />
               </div>
 
@@ -299,14 +291,14 @@ export function Agents() {
                   id="is_active"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 text-slate-900 rounded border-slate-300 focus:ring-2 focus:ring-slate-900/10"
                 />
-                <Label htmlFor="is_active" className="cursor-pointer">
+                <Label htmlFor="is_active" className="cursor-pointer mb-0">
                   Active (ready to make calls)
                 </Label>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
                   variant="secondary"
@@ -316,7 +308,7 @@ export function Agents() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={saving} className="flex-1">
-                  {saving ? 'Saving...' : editingAgent ? 'Update Agent' : 'Create Agent'}
+                  {saving ? 'Saving...' : editingAgent ? 'Update' : 'Create'}
                 </Button>
               </div>
             </form>

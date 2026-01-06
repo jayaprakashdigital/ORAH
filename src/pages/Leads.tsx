@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { Plus, CheckCircle2, XCircle, X, RefreshCw } from 'lucide-react';
+import { Plus, CheckCircle2, XCircle, X, RefreshCw, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Database } from '../lib/database.types';
@@ -13,7 +13,6 @@ import { useAutoSync } from '../hooks/useAutoSync';
 import { DateFilter, useDateFilter } from '../components/ui/DateFilter';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
-type Call = Database['public']['Tables']['calls']['Row'];
 
 interface EnrichedLead extends Lead {
   timeCategory: 'Working Hours' | 'Non-Working Hours';
@@ -27,6 +26,7 @@ export function Leads() {
   const [leads, setLeads] = useState<EnrichedLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState({
     status: 'all',
     timeCategory: 'all',
@@ -51,7 +51,6 @@ export function Leads() {
     if (authLoading) return;
 
     if (!profile?.company_id) {
-      console.warn('[LEADS] No company_id available');
       setLoading(false);
       return;
     }
@@ -89,7 +88,6 @@ export function Leads() {
       setLeads(enrichedLeads);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load leads';
-      console.error('[LEADS] Error:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -161,7 +159,6 @@ export function Leads() {
 
       await fetchLeads();
     } catch (err) {
-      console.error('[LEADS] Error adding lead:', err);
       alert(err instanceof Error ? err.message : 'Failed to add lead');
     } finally {
       setSaving(false);
@@ -170,16 +167,25 @@ export function Leads() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-700';
-      case 'contacted': return 'bg-yellow-100 text-yellow-700';
-      case 'qualified': return 'bg-green-100 text-green-700';
-      case 'unqualified': return 'bg-red-100 text-red-700';
-      default: return 'bg-slate-100 text-slate-700';
+      case 'new': return 'bg-blue-50 text-blue-700';
+      case 'contacted': return 'bg-amber-50 text-amber-700';
+      case 'qualified': return 'bg-emerald-50 text-emerald-700';
+      case 'unqualified': return 'bg-red-50 text-red-700';
+      default: return 'bg-slate-50 text-slate-700';
     }
   };
 
   const dateFilteredLeads = filterByDate(leads);
+
   const filteredLeads = dateFilteredLeads.filter(lead => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      if (!lead.name.toLowerCase().includes(query) &&
+          !lead.mobile.includes(query) &&
+          !(lead.email?.toLowerCase().includes(query))) {
+        return false;
+      }
+    }
     if (filter.status !== 'all' && lead.status !== filter.status) return false;
     if (filter.timeCategory !== 'all' && lead.timeCategory !== filter.timeCategory) return false;
     if (filter.success === 'true' && !lead.successEvaluation) return false;
@@ -191,11 +197,11 @@ export function Leads() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-semibold">Leads</h2>
-          <div className="flex items-center gap-2">
-            <p className="text-slate-500">Manage your real estate leads</p>
+          <h1 className="text-xl font-semibold text-slate-900">Leads</h1>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-slate-500">Manage your real estate leads</p>
             {syncing && (
               <div className="flex items-center gap-1 text-xs text-blue-600">
                 <RefreshCw className="w-3 h-3 animate-spin" />
@@ -204,7 +210,7 @@ export function Leads() {
             )}
             {lastSync && !syncing && (
               <span className="text-xs text-slate-400">
-                Last synced: {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                Synced {lastSync.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
@@ -212,7 +218,7 @@ export function Leads() {
         <div className="flex items-center gap-3">
           <DateFilter value={dateRange} onChange={setDateRange} />
           <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4 mr-1.5" />
             Add Lead
           </Button>
         </div>
@@ -220,33 +226,42 @@ export function Leads() {
 
       {loading ? (
         <Card>
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             Loading leads...
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div className="p-8 text-center">
-            <p className="text-red-600 mb-2">Error loading leads</p>
-            <p className="text-sm text-slate-500">{error}</p>
+            <p className="text-red-600 text-sm">Error loading leads</p>
+            <p className="text-xs text-slate-500 mt-1">{error}</p>
           </div>
         </Card>
       ) : leads.length === 0 ? (
         <Card>
-          <div className="p-8 text-center text-slate-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             No leads yet. Click "Add Lead" to get started.
           </div>
         </Card>
       ) : (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
-              <div className="flex gap-3 flex-wrap">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search leads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-9 pl-9 pr-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 <select
                   value={filter.status}
                   onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="h-9 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 bg-white"
                 >
                   <option value="all">All Status</option>
                   {uniqueStatuses.map(status => (
@@ -257,111 +272,108 @@ export function Leads() {
                 <select
                   value={filter.timeCategory}
                   onChange={(e) => setFilter({ ...filter, timeCategory: e.target.value })}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="h-9 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 bg-white"
                 >
-                  <option value="all">All Time Categories</option>
+                  <option value="all">All Hours</option>
                   <option value="Working Hours">Working Hours</option>
-                  <option value="Non-Working Hours">Non-Working Hours</option>
+                  <option value="Non-Working Hours">Non-Working</option>
                 </select>
 
                 <select
                   value={filter.success}
                   onChange={(e) => setFilter({ ...filter, success: e.target.value })}
-                  className="px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  className="h-9 px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 bg-white"
                 >
-                  <option value="all">All Success Status</option>
-                  <option value="true">Successful Only</option>
-                  <option value="false">Failed/Nurture Only</option>
+                  <option value="all">All Results</option>
+                  <option value="true">Qualified</option>
+                  <option value="false">Nurture</option>
                 </select>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Mobile</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Created At</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Time Category</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Budget</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Unit</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Location</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Success</th>
+            <p className="text-xs text-slate-500 mt-3">{filteredLeads.length} leads</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Contact</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Hours</th>
+                  <th>Budget</th>
+                  <th>Unit</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLeads.map((lead) => (
+                  <tr
+                    key={lead.id}
+                    className="cursor-pointer"
+                    onClick={() => navigate(`/leads/${lead.id}`)}
+                  >
+                    <td className="font-medium text-slate-900">{lead.name}</td>
+                    <td>
+                      <div>
+                        <p>{lead.mobile}</p>
+                        <p className="text-xs text-slate-400">{lead.email || '-'}</p>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${getStatusColor(lead.status)}`}>
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td className="text-slate-500">
+                      {new Date(lead.created_at).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                      })}
+                    </td>
+                    <td>
+                      <span className={`status-badge ${
+                        lead.timeCategory === 'Working Hours' ? 'bg-blue-50 text-blue-700' : 'bg-slate-50 text-slate-600'
+                      }`}>
+                        {lead.timeCategory === 'Working Hours' ? 'Working' : 'Non-Working'}
+                      </span>
+                    </td>
+                    <td className="text-slate-500">{lead.budget || '-'}</td>
+                    <td className="text-slate-500">{lead.unit_preference || '-'}</td>
+                    <td>
+                      {lead.successEvaluation ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-slate-300" />
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredLeads.map((lead) => (
-                    <tr
-                      key={lead.id}
-                      className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
-                      onClick={() => navigate(`/leads/${lead.id}`)}
-                    >
-                      <td className="py-3 px-4 text-sm font-medium text-slate-900">{lead.name}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{lead.mobile}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{lead.email || '-'}</td>
-                      <td className="py-3 px-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(lead.status)}`}>
-                          {lead.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-slate-600">
-                        {new Date(lead.created_at).toLocaleString('en-IN', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          lead.timeCategory === 'Working Hours' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {lead.timeCategory}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{lead.budget || '-'}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{lead.unit_preference || '-'}</td>
-                      <td className="py-3 px-4 text-sm text-slate-600">{lead.location_preference || '-'}</td>
-                      <td className="py-3 px-4 text-sm">
-                        {lead.successEvaluation ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-600" />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filteredLeads.length === 0 && (
-                <div className="py-8 text-center text-slate-500">
-                  No leads match the selected filters
-                </div>
-              )}
-            </div>
-          </CardContent>
+                ))}
+              </tbody>
+            </table>
+            {filteredLeads.length === 0 && (
+              <div className="py-8 text-center text-sm text-slate-500">
+                No leads match the selected filters
+              </div>
+            )}
+          </div>
         </Card>
       )}
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Add New Lead</h3>
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-white border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-900">Add New Lead</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="p-1 hover:bg-slate-100 rounded"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
 
-            <form onSubmit={handleAddLead} className="p-6 space-y-4">
+            <form onSubmit={handleAddLead} className="p-5 space-y-4">
               <div>
                 <Label htmlFor="name">Name *</Label>
                 <Input
@@ -433,11 +445,11 @@ export function Leads() {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Additional notes"
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <Button
                   type="button"
                   variant="secondary"

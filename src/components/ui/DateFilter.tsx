@@ -135,27 +135,27 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
     <div className={cn('relative', className)} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors text-sm"
+        className="flex items-center gap-2 h-9 px-3 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-colors text-sm"
       >
-        <Calendar className="w-4 h-4 text-slate-500" />
-        <span className="text-slate-700 font-medium">{value.label}</span>
-        <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', isOpen && 'rotate-180')} />
+        <Calendar className="w-4 h-4 text-slate-400" />
+        <span className="text-slate-700">{value.label}</span>
+        <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 z-50 overflow-hidden">
+        <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-slate-200/60 z-50 overflow-hidden">
           {!showCustom ? (
             <>
-              <div className="p-2 space-y-1">
+              <div className="p-1.5 space-y-0.5">
                 {presets.map((preset) => (
                   <button
                     key={preset.label}
                     onClick={() => handlePresetSelect(preset)}
                     className={cn(
-                      'w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
+                      'w-full text-left px-3 py-1.5 text-sm rounded-lg transition-colors',
                       value.label === preset.label
-                        ? 'bg-blue-50 text-blue-700 font-medium'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        ? 'bg-slate-100 text-slate-900 font-medium'
+                        : 'text-slate-600 hover:bg-slate-50'
                     )}
                   >
                     {preset.label}
@@ -163,52 +163,52 @@ export function DateFilter({ value, onChange, className }: DateFilterProps) {
                 ))}
                 <button
                   onClick={() => setShowCustom(true)}
-                  className="w-full text-left px-3 py-2 text-sm rounded-md text-slate-700 hover:bg-slate-50"
+                  className="w-full text-left px-3 py-1.5 text-sm rounded-lg text-slate-600 hover:bg-slate-50"
                 >
                   Custom Range
                 </button>
               </div>
-              <div className="border-t border-slate-100 p-2">
+              <div className="border-t border-slate-100 p-1.5">
                 <button
                   onClick={handleReset}
-                  className="w-full flex items-center justify-center gap-1 px-3 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-md"
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                 >
                   <X className="w-3 h-3" />
-                  Reset Filter
+                  Reset
                 </button>
               </div>
             </>
           ) : (
             <div className="p-3 space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Start Date</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">End Date</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
                 <input
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setShowCustom(false)}
-                  className="flex-1 px-3 py-2 text-sm text-slate-600 bg-slate-100 rounded-md hover:bg-slate-200"
+                  className="flex-1 px-3 py-2 text-sm text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleCustomApply}
                   disabled={!customStart || !customEnd}
-                  className="flex-1 px-3 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 text-sm text-white bg-slate-900 rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Apply
                 </button>

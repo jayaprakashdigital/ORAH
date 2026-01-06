@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Users, CheckCircle2, XCircle, Clock, Sun } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,14 +91,16 @@ export function Analytics() {
   const workingHoursLeads = leads.filter(l => l.timeCategory === 'Working Hours').length;
   const nonWorkingHoursLeads = leads.filter(l => l.timeCategory === 'Non-Working Hours').length;
 
+  const successRate = totalLeads > 0 ? Math.round((successfulLeads / totalLeads) * 100) : 0;
+
   const timeDistributionData = [
     { name: 'Working Hours', value: workingHoursLeads, color: '#3b82f6' },
-    { name: 'Non-Working Hours', value: nonWorkingHoursLeads, color: '#14b8a6' },
+    { name: 'Non-Working Hours', value: nonWorkingHoursLeads, color: '#64748b' },
   ];
 
   const successDistributionData = [
-    { name: 'Successful', value: successfulLeads, color: '#10b981' },
-    { name: 'Failed/Nurture', value: failedLeads, color: '#ef4444' },
+    { name: 'Qualified', value: successfulLeads, color: '#10b981' },
+    { name: 'Nurture', value: failedLeads, color: '#f59e0b' },
   ];
 
   const hourlyData = Array.from({ length: 24 }, (_, hour) => ({
@@ -119,14 +121,14 @@ export function Analytics() {
 
   const successByTimeData = [
     {
-      category: 'Working Hours',
-      successful: leads.filter(l => l.timeCategory === 'Working Hours' && l.successEvaluation).length,
-      failed: leads.filter(l => l.timeCategory === 'Working Hours' && !l.successEvaluation).length,
+      category: 'Working',
+      qualified: leads.filter(l => l.timeCategory === 'Working Hours' && l.successEvaluation).length,
+      nurture: leads.filter(l => l.timeCategory === 'Working Hours' && !l.successEvaluation).length,
     },
     {
-      category: 'Non-Working Hours',
-      successful: leads.filter(l => l.timeCategory === 'Non-Working Hours' && l.successEvaluation).length,
-      failed: leads.filter(l => l.timeCategory === 'Non-Working Hours' && !l.successEvaluation).length,
+      category: 'Non-Working',
+      qualified: leads.filter(l => l.timeCategory === 'Non-Working Hours' && l.successEvaluation).length,
+      nurture: leads.filter(l => l.timeCategory === 'Non-Working Hours' && !l.successEvaluation).length,
     },
   ];
 
@@ -139,7 +141,7 @@ export function Analytics() {
       acc.push({ unit, count: 1 });
     }
     return acc;
-  }, [] as { unit: string; count: number }[]).sort((a, b) => b.count - a.count);
+  }, [] as { unit: string; count: number }[]).sort((a, b) => b.count - a.count).slice(0, 5);
 
   const locationData = leads.reduce((acc, lead) => {
     const location = lead.location_preference || 'Not specified';
@@ -159,8 +161,8 @@ export function Analytics() {
 
   if (loading) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-slate-500">Loading analytics...</p>
+      <div className="flex items-center justify-center h-64">
+        <p className="text-sm text-slate-500">Loading analytics...</p>
       </div>
     );
   }
@@ -169,89 +171,85 @@ export function Analytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold">Analytics</h2>
-          <p className="text-slate-500">Comprehensive lead performance insights</p>
+          <h1 className="text-xl font-semibold text-slate-900">Analytics</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Lead performance insights</p>
         </div>
         <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {totalLeads === 0 ? (
         <Card>
-          <div className="p-8 text-center text-slate-500">
-            No leads data in selected date range.
+          <div className="p-8 text-center text-sm text-slate-500">
+            No leads data in selected date range
           </div>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Total Leads</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{totalLeads}</p>
-                  </div>
-                  <Users className="w-8 h-8 text-blue-600" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="stat-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-100">
+                  <Users className="w-4 h-4 text-slate-600" />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Successful Leads</p>
-                    <p className="text-2xl font-bold text-green-600 mt-1">{successfulLeads}</p>
-                  </div>
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
+                <div>
+                  <p className="text-xs text-slate-500">Total Leads</p>
+                  <p className="text-lg font-semibold text-slate-900">{totalLeads}</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Failed/Nurture</p>
-                    <p className="text-2xl font-bold text-red-600 mt-1">{failedLeads}</p>
-                  </div>
-                  <XCircle className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-50">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Working Hours</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{workingHoursLeads}</p>
-                  </div>
-                  <Sun className="w-8 h-8 text-orange-600" />
+                <div>
+                  <p className="text-xs text-slate-500">Qualified</p>
+                  <p className="text-lg font-semibold text-emerald-600">{successfulLeads}</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Non-Working Hours</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{nonWorkingHoursLeads}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-teal-600" />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-50">
+                  <XCircle className="w-4 h-4 text-amber-600" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-xs text-slate-500">Nurture</p>
+                  <p className="text-lg font-semibold text-amber-600">{failedLeads}</p>
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-50">
+                  <Sun className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Working Hrs</p>
+                  <p className="text-lg font-semibold text-slate-900">{workingHoursLeads}</p>
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-100">
+                  <Clock className="w-4 h-4 text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Success Rate</p>
+                  <p className="text-lg font-semibold text-slate-900">{successRate}%</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Working vs Non-Working Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Working vs Non-Working Hours</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
                       data={timeDistributionData}
@@ -259,7 +257,7 @@ export function Analytics() {
                       cy="50%"
                       labelLine={false}
                       label={({ value, percent }) => `${value} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
+                      outerRadius={90}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -271,15 +269,15 @@ export function Analytics() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Success vs Failed Leads</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Qualification Status</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
                       data={successDistributionData}
@@ -287,7 +285,7 @@ export function Analytics() {
                       cy="50%"
                       labelLine={false}
                       label={({ value, percent }) => `${value} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
+                      outerRadius={90}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -299,116 +297,115 @@ export function Analytics() {
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Leads by Hour (24h)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Leads by Hour (24h)</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" tick={{ fontSize: 12 }} />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="hour" tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="leads" fill="#3b82f6" />
+                    <Bar dataKey="leads" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Daily Lead Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Daily Lead Trend</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={280}>
                   <LineChart data={dailyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="leads" stroke="#10b981" strokeWidth={2} />
+                    <Line type="monotone" dataKey="leads" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', strokeWidth: 0, r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Success Rate by Time Category</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-sm font-semibold text-slate-900">Success Rate by Time Category</h3>
+            </div>
+            <div className="p-5">
+              <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={successByTimeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="category" stroke="#64748b" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="successful" fill="#10b981" name="Successful" />
-                  <Bar dataKey="failed" fill="#ef4444" name="Failed/Nurture" />
+                  <Bar dataKey="qualified" fill="#10b981" name="Qualified" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="nurture" fill="#f59e0b" name="Nurture" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
+            </div>
           </Card>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Unit Preference</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={unitPreferenceData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="unit" width={100} tick={{ fontSize: 12 }} />
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Unit Preference</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={unitPreferenceData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="unit" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Top 5 Locations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={locationData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="location" width={100} tick={{ fontSize: 12 }} />
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Top Locations</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={locationData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" stroke="#64748b" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="location" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#f59e0b" />
+                    <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Budget Range Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900">Budget Distribution</h3>
+              </div>
+              <div className="p-5">
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={budgetData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="range" tick={{ fontSize: 12 }} />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="range" tick={{ fontSize: 10 }} stroke="#64748b" />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#06b6d4" />
+                    <Bar dataKey="count" fill="#64748b" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </CardContent>
+              </div>
             </Card>
           </div>
         </>
