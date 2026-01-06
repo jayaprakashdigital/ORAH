@@ -11,9 +11,10 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', to: '/dashboard', icon: Home },
   { name: 'Leads', to: '/leads', icon: Users },
-  { name: 'Site Visits', to: '/site-visits', icon: Calendar },
+  { name: 'Site Visits', to: '/site-visits', icon: Activity },
   { name: 'Analytics', to: '/analytics', icon: BarChart3 },
   { name: 'Call Analytics', to: '/call-analytics', icon: Activity },
+  { name: 'Calendar', to: '/calendar', icon: Calendar },
   { name: 'Agents', to: '/agents', icon: Bot },
   { name: 'Integrations', to: '/integrations', icon: Plug },
   { name: 'Settings', to: '/settings', icon: Settings },

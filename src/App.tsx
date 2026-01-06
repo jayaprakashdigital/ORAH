@@ -12,6 +12,7 @@ import { Analytics } from './pages/Analytics';
 import { Agents } from './pages/Agents';
 import { Integrations } from './pages/Integrations';
 import { CallAnalytics } from './pages/CallAnalytics';
+import { Calendar } from './pages/Calendar';
 import { Settings } from './pages/Settings';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -97,6 +98,7 @@ function App() {
             <Route path="agents" element={<Agents />} />
             <Route path="integrations" element={<Integrations />} />
             <Route path="call-analytics" element={<CallAnalytics />} />
+            <Route path="calendar" element={<Calendar />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 

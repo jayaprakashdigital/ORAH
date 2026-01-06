@@ -64,9 +64,34 @@ export function Dashboard() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 2000);
-    return () => clearInterval(interval);
   }, [profile?.company_id, authLoading]);
+
+  useEffect(() => {
+    if (!profile?.company_id) return;
+
+    const interval = setInterval(async () => {
+      const [leadsResult, callsResult] = await Promise.all([
+        supabase
+          .from('leads')
+          .select('*')
+          .eq('company_id', profile.company_id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('calls')
+          .select('lead_id, success_evaluation, status, created_at')
+          .eq('company_id', profile.company_id),
+      ]);
+
+      if (JSON.stringify(leadsResult.data) !== JSON.stringify(allLeads)) {
+        setAllLeads(leadsResult.data || []);
+      }
+      if (JSON.stringify(callsResult.data) !== JSON.stringify(allCalls)) {
+        setAllCalls(callsResult.data || []);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [profile?.company_id, allLeads, allCalls]);
 
   const filteredLeads = filterByDate(allLeads);
   const filteredCalls = filterByDate(allCalls);
